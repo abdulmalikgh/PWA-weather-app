@@ -1,8 +1,36 @@
 
+
 (function() {
   'use strict';
 
   var weatherAPIUrlBase = 'https://publicdata-weather.firebaseio.com/';
+
+  var injectedForecast = {
+    key: 'newyork',
+    label: 'New York, NY',
+    currently: {
+      time: 1453489481,
+      summary: 'Clear',
+      icon: 'partly-cloudy-day',
+      temperature: 52.74,
+      apparentTemperature: 74.34,
+      precipProbability: 0.20,
+      humidity: 0.77,
+      windBearing: 125,
+      windSpeed: 1.52
+    },
+    daily: {
+      data: [
+        {icon: 'clear-day', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'rain', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'snow', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'sleet', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'fog', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'wind', temperatureMax: 55, temperatureMin: 34},
+        {icon: 'partly-cloudy-day', temperatureMax: 55, temperatureMin: 34}
+      ]
+    }
+  };
 
   var app = {
     isLoading: true,
@@ -32,7 +60,7 @@
     // Open/show the add new city dialog
     app.toggleAddDialog(true);
   });
-
+  
   /* Event listener for add city button in add city dialog */
   document.getElementById('butAddCity').addEventListener('click', function() {
     var select = document.getElementById('selectCityToAdd');
@@ -40,6 +68,7 @@
     var key = selected.value;
     var label = selected.textContent;
     app.getForecast(key, label);
+    app.saveCities(key,label)
     app.selectedCities.push({key: key, label: label});
     app.toggleAddDialog(false);
   });
@@ -55,7 +84,34 @@
    * Methods to update/refresh the UI
    *
    ****************************************************************************/
-
+  // using indexeddb to catch files
+  const dbPromise = idb.open('cities', 2, function(upgrageDb) {
+    upgrageDb.createObjectStore('saveCities',{keyPath:'key'})
+    const store = upgrageDb.transaction.objectStore('saveCities');
+    store.createIndex('key','key',{unique:true})
+  })
+  app.saveCities = function(key,label) {
+    dbPromise.then(db=> {
+      const transaction = db.transaction('saveCities','readwrite');
+      const store = transaction.objectStore('saveCities')
+      store.add({key:key,label:label})
+    }).catch( ()=> {
+      transaction.abort()
+    })
+  }
+ app.getSavedCities = function() {
+   dbPromise.then(db => {
+     const transaction = db.transaction('saveCities','readwrite');
+     const store = transaction.objectStore('saveCities')
+     return store.getAll()
+   }).then(cities => {
+     cities.map(city => {
+      app.getForecast(city.key, city.label);
+      app.selectedCities.push({key:city.key,label:city.label})
+     })
+   })
+ }
+ app.getSavedCities()
   // Toggles the visibility of the add new city dialog.
   app.toggleAddDialog = function(visible) {
     if (visible) {
@@ -149,5 +205,5 @@
       app.getForecast(key);
     });
   };
-
+app.updateForecastCard(injectedForecast)
 })();
