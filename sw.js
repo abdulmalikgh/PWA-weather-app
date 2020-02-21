@@ -1,11 +1,13 @@
-const cacheName = 'pwacachev1';
+const cacheName = 'weather-pwaStatic-v2';
+const dataToCache = 'weather-pwaData-v2';
+let dataUrl = 'https://publicdata-weather.firebaseio.com/';
 const filesToCache = [
     '/',
     '/index.html',
     '/styles/ud811.css',
     '/scripts/idb.js',
     '/scripts/app.js',
-    '/favicon.ico',
+    '/manifest.json',
     '/images/clear.png',
     '/images/cloudy_s_sunny.png',
     '/images/cloudy-scattered-showers.png',
@@ -25,17 +27,19 @@ self.addEventListener('install',function(e){
     console.log('installing service worker')
   e.waitUntil( 
       caches.open(cacheName)
-      .then(cache => {
+      .then(function(cache) {
+          console.log('[ServiceWorker] Caching app shell')
           return cache.addAll(filesToCache)
       })
   )
 })
 self.addEventListener('activate', function(e){
-    console.log('activating service worker')
+    console.log('[ServiceWorker] Activate');
     e.waitUntil(
-        caches.keys().then(keyLIst => {
+        caches.keys().then(function(keyLIst){
             return Promise.all(keyLIst.map(key => {
-                if(key !== cacheName) {
+                if(key !== cacheName && key !== dataToCache) {
+                    console.log('[ServiceWorker] Removing old cache', key);
                     return caches.delete(key)
                 }
             }))
@@ -44,14 +48,23 @@ self.addEventListener('activate', function(e){
 })
 
 self.addEventListener('fetch', function(e) {
-    console.log('fetching data')
-    e.respondWith( 
-        caches.match(e.request).then(response => {
-            if(response) {
-                return response ;
-            }else {
-                return fetch(e.request)
-            }
-        })
-    )
+ if(e.request.url.startsWith(dataUrl)) {
+     e.respondWith(
+         fetch(e.request)
+         .then(function(response){
+             return caches.open(dataToCache).then(function(cache){
+                 cache.put(e.request.url,response.clone());
+                 console.log('[ServiceWorker] Fetched & Cached', e.request.url);
+                 return response;
+             })
+         })
+     )
+ } else {
+     e.respondWith(
+         caches.match(e.request).then(function(response){
+            console.log('[ServiceWorker] Fetch Only', e.request.url);
+             return response || fetch(e.request)
+         })
+     )
+ }
 })

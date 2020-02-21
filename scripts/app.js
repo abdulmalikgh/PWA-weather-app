@@ -1,6 +1,6 @@
 
 if('serviceWorker' in navigator) {
- navigator.serviceWorker.register('./sw.js')
+ navigator.serviceWorker.register('/sw.js')
   .then(reg => {
     console.log('service Worker registration succesfully', reg)
   })
@@ -138,6 +138,13 @@ if('serviceWorker' in navigator) {
       app.container.appendChild(card);
       app.visibleCards[data.key] = card;
     }
+    var dateElem = card.querySelector('.date');
+    if (dateElem.getAttribute('data-dt') >= data.currently.time) {
+      return;
+    }
+
+    dateElem.setAttribute('data-dt', data.currently.time);
+    dateElem.textContent = new Date(data.currently.time * 1000);
     card.querySelector('.description').textContent = data.currently.summary;
     card.querySelector('.date').textContent =
       new Date(data.currently.time * 1000);
@@ -188,16 +195,16 @@ if('serviceWorker' in navigator) {
   app.getForecast = function(key, label) {
     var url = weatherAPIUrlBase + key + '.json';
   // Fetch data from fetch when available
-  if('cache' in window) {
-   caches.math(url).then(response => {
+  if('caches' in window) {
+   caches.match(url).then(response => {
      if(response) {
        response.json().then(json => {
-         if(app.hasRequestPending) {
+        
           json.key = key;
           json.label = label;
           console.log('updating ui from cache');
           app.updateForecastCard(json)
-         }
+         
        })
      }
    })
