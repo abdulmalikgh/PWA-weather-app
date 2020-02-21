@@ -23,8 +23,7 @@ const filesToCache = [
     '/images/thunderstorm.png',
     '/images/wind.png'
 ]
-self.addEventListener('install',function(e){
-    console.log('installing service worker')
+self.addEventListener('install',function(e){  
   e.waitUntil( 
       caches.open(cacheName)
       .then(function(cache) {
@@ -34,12 +33,12 @@ self.addEventListener('install',function(e){
   )
 })
 self.addEventListener('activate', function(e){
-    console.log('[ServiceWorker] Activate');
+   // console.log('[ServiceWorker] Activate');
     e.waitUntil(
         caches.keys().then(function(keyLIst){
             return Promise.all(keyLIst.map(key => {
                 if(key !== cacheName && key !== dataToCache) {
-                    console.log('[ServiceWorker] Removing old cache', key);
+                    //console.log('[ServiceWorker] Removing old cache', key);
                     return caches.delete(key)
                 }
             }))
@@ -54,7 +53,7 @@ self.addEventListener('fetch', function(e) {
          .then(function(response){
              return caches.open(dataToCache).then(function(cache){
                  cache.put(e.request.url,response.clone());
-                 console.log('[ServiceWorker] Fetched & Cached', e.request.url);
+                 //console.log('[ServiceWorker] Fetched & Cached', e.request.url);
                  return response;
              })
          })
@@ -62,7 +61,7 @@ self.addEventListener('fetch', function(e) {
  } else {
      e.respondWith(
          caches.match(e.request).then(function(response){
-            console.log('[ServiceWorker] Fetch Only', e.request.url);
+            //console.log('[ServiceWorker] Fetch Only', e.request.url);
              return response || fetch(e.request)
          })
      )

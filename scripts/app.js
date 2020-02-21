@@ -202,7 +202,7 @@ if('serviceWorker' in navigator) {
         
           json.key = key;
           json.label = label;
-          console.log('updating ui from cache');
+          //console.log('updating ui from cache');
           app.updateForecastCard(json)
          
        })
